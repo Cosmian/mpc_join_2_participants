@@ -1,0 +1,24 @@
+[package]
+name = "rust_git"
+version = "0.1.0"
+authors = ["Oliver Scherer <oliver.scherer@cosmian.com>"]
+edition = "2018"
+
+[dependencies]
+scale = { package = "scale-core", version = "0.1.0" }
+scale_std = "0.1.0"
+
+[features]
+emulate = ["scale/emulate", "scale_std/emulate"]
+
+[profile.dev]
+overflow-checks = false
+
+[profile.release]
+# Note: Do not set `debug = true`, `wasm-opt` dies horribly if you do.
+panic = "abort"
+# LTO really cleans up the amount of wasm that is generated
+lto = true
+codegen-units = 1
+
+[workspace]
