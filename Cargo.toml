@@ -1,7 +1,7 @@
 [package]
-name = "rust_git"
+name = "mpc-join-2-participants"
 version = "0.1.0"
-authors = ["Oliver Scherer <oliver.scherer@cosmian.com>"]
+authors = ["Thibaud Genty <thibaud.genty@cosmian.com>"]
 edition = "2018"
 
 [dependencies]
