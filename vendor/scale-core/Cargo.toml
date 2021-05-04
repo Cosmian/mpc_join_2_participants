@@ -13,7 +13,7 @@
 [package]
 edition = "2018"
 name = "scale-core"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Oliver Scherer <oliver.scherer@cosmian.com>", "Nigel P. Smart", "Benjamin Coenen <benjamin.coenen@cosmian.com>"]
 build = "build.rs"
 description = "low level datastructures and functionality for compiling for SCALE via wasm"

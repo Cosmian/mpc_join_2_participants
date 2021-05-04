@@ -1,4 +1,3 @@
-
 // Copyright (c) 2021, COSIC-KU Leuven, Kasteelpark Arenberg 10, bus 2452, B-3001 Leuven-Heverlee, Belgium.
 // Copyright (c) 2021, Cosmian Tech SAS, 53-55 rue La Boétie, Paris, France.
 
@@ -378,8 +377,9 @@ macro_rules! __main {
         type SecretInteger<const K: u64> = scale_std::integer::SecretInteger<K, $kappa>;
         type SecretFixed<const K: u64, const F: u64> =
             scale_std::fixed_point::SecretFixed<K, F, $kappa>;
-        type SecretFloat<const V: u64, const P: u64> = 
-            scale_std::floating_point::SecretFloat<V,P,$kappa>;
+        type SecretFloat<const V: u64, const P: u64> =
+            scale_std::floating_point::SecretFloat<V, P, $kappa>;
+        #[cfg(not(test))]
         mod helper {
             #[no_mangle]
             fn main() {

@@ -4,12 +4,20 @@ version = "0.1.0"
 authors = ["Thibaud Genty <thibaud.genty@cosmian.com>"]
 edition = "2018"
 
+[[bin]]
+name="scale_wasm"
+test=false
+bench=false
+path="src/main.rs"
+
+[workspace]
+# This is required to keep the package out of a workspace
+
 [dependencies]
-scale = { package = "scale-core", version = "0.1.0" }
-scale_std = "0.1.0"
+cosmian_std = { version = "0.1" }
 
 [features]
-emulate = ["scale/emulate", "scale_std/emulate"]
+emulate = ["cosmian_std/emulate"]
 
 [profile.dev]
 overflow-checks = false
@@ -21,4 +29,5 @@ panic = "abort"
 lto = true
 codegen-units = 1
 
-[workspace]
+[dev-dependencies]
+serde_json = "1.0.61"

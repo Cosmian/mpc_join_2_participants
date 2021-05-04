@@ -15,6 +15,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cosmian_std"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a7ed158180d96331776c4d914c763792433b339e6591a98b9111bc2619329cd"
+dependencies = [
+ "once_cell",
+ "scale-core",
+ "scale_std",
+ "serde_json",
+]
+
+[[package]]
 name = "eyre"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -31,6 +43,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4d5eb2e114fec2b7fe0fadc22888ad2658789bb7acac4dbee9cf8389f971ec8"
 
 [[package]]
+name = "itoa"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -40,8 +58,8 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 name = "mpc-join-2-participants"
 version = "0.1.0"
 dependencies = [
- "scale-core",
- "scale_std",
+ "cosmian_std",
+ "serde_json",
 ]
 
 [[package]]
@@ -105,10 +123,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "scale-core"
-version = "0.1.0"
+name = "ryu"
+version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d1cca888313f9d0310ef45e806e002b5771a5f778afa1ba8e4ebd07e3c71890"
+checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
+
+[[package]]
+name = "scale-core"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6392f535433b89fbf2e1fcf09e665f24b8e3cb72eb24f84bf67693ce1e3b991b"
 dependencies = [
  "lazy_static",
  "num-bigint",
@@ -162,6 +186,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40282f20adf68e85cbe82b06d50b4e7b3bd89000e814e73ebf8b87480ea7235c"
 dependencies = [
  "scale-core",
+]
+
+[[package]]
+name = "serde"
+version = "1.0.125"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "558dc50e1a5a5fa7112ca2ce4effcb321b0300c0d4ccf0776a9f60cd89031171"
+
+[[package]]
+name = "serde_json"
+version = "1.0.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "799e97dc9fdae36a5c8b8f2cae9ce2ee9fdce2058c57a93e6099d919fd982f79"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
 ]
 
 [[package]]

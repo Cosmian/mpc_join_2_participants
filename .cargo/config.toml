@@ -2,4 +2,7 @@
 replace-with = "vendored-sources"
 
 [source.vendored-sources]
-directory = "dependencies"
+directory = "vendor"
+
+[build]
+target = "wasm32-unknown-unknown"

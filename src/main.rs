@@ -1,110 +1,99 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 
-use scale_std::slice::Slice;
+use cosmian_std::scale::{self, println};
+use cosmian_std::{prelude::*, Column, InputRow, OutputRow};
 
 // Players
-// PARTICIPANT_3 is just an arbiter, as MPC needs at least 3 participants
-const PARTICIPANT_1: u32 = 0; // data provider, receives results
-const PARTICIPANT_2: u32 = 1; // data provider, receives results
+// PARTICIPANT_2 is just an arbiter, as MPC needs at least 3 participants
+const PARTICIPANT_0: u32 = 0; // data provider, receives results
+const PARTICIPANT_1: u32 = 1; // data provider, receives results
 
 #[inline(never)]
 #[scale::main(KAPPA = 40)]
 fn main() {
-    print!("##### Reading from players\n");
+    println!("##### Reading from players");
 
     'global: loop {
-        // First fetch of id player 1
-        let row_participant_1 = match read_row(Player::<PARTICIPANT_1>) {
-            Some(row) => row,
+        // First fetch of id participant 0
+        let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
+        // The id is a `SecretModp`: its value never appears in clear text in the program memory
+        let mut id_participant_0 = match row_participant_0.next_col() {
+            Some(Column::SecretModp(id)) => id,
             None => {
-                print!("done row_participant_1\n");
+                println!("    <-- no more data for participant 0");
                 break 'global;
             }
+            _ => {
+                scale::panic!("bad data format for data from participant 0!");
+                return;
+            }
         };
-        let mut id_participant_1 = *row_participant_1
-            .get(0)
-            .expect("cannot get id participant_1");
 
         // First fetch of id player 2
-        let row_participant_2 = match read_row(Player::<PARTICIPANT_2>) {
-            Some(row) => row,
+        let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
+        // The id is a `SecretModp`: its value never appears in clear text in the program memory
+        let mut id_participant_1 = match row_participant_1.next_col() {
+            Some(Column::SecretModp(id)) => id,
             None => {
-                print!("done row_participant_2\n");
+                println!("    <-- no more data for participant 1");
                 break 'global;
             }
+            _ => {
+                scale::panic!("bad data format for data from participant 1!");
+                return;
+            }
         };
-        let mut id_participant_2 = *row_participant_2
-            .get(0)
-            .expect("cannot get id participant_2");
 
         loop {
-            println!("looop");
-            if id_participant_1.eq(id_participant_2).reveal() {
-                println!("match");
-                // Send id to both PARTICIPANT_1 and PARTICIPANT_2
-                SecretModp::from(id_participant_2)
-                    .private_output(Player::<PARTICIPANT_1>, Channel::<0>);
-                SecretModp::from(id_participant_2)
-                    .private_output(Player::<PARTICIPANT_2>, Channel::<0>);
+            // secret comparisons are performed on 64 bit integers
+            let id_0 = SecretI64::from(id_participant_0);
+            let id_1 = SecretI64::from(id_participant_1);
 
-                println!("flush");
-                // Send/Flush the row
-                SecretModp::from(ConstI32::<0>)
-                    .private_output(Player::<PARTICIPANT_1>, Channel::<1>);
-                SecretModp::from(ConstI32::<0>)
-                    .private_output(Player::<PARTICIPANT_2>, Channel::<1>);
+            if id_0.eq(id_1).reveal() {
+                println!(" -> match");
+                // Create the next row we are going to output to the data consumer
+                let mut output_row_0 = OutputRow::new(Player::<PARTICIPANT_0>);
+                // Create the next row we are going to output to the data consumer
+                let mut output_row_1 = OutputRow::new(Player::<PARTICIPANT_1>);
 
-                break; // It's good because we need to fetch new id_participant_1 and new id_participant_2
-            } else if id_participant_1.lt(id_participant_2).reveal() {
-                // Fetch next id_participant_1
-                let row_participant_1 = match read_row(Player::<PARTICIPANT_1>) {
-                    Some(row) => row,
+                // Send id to both participant 0 and participant 1
+                output_row_0.append(id_participant_0);
+                output_row_1.append(id_participant_1);
+
+                // the rows will be automatically flushed to the participants
+                // this break returns to the global loop and fetches bth IDs
+                break;
+            } else if id_0.lt(id_1).reveal() {
+                // Fetch next id_participant 0
+                let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
+                id_participant_0 = match row_participant_0.next_col() {
+                    Some(Column::SecretModp(id)) => id,
                     None => {
-                        print!("done row_participant_1\n");
+                        println!("    <-- no more data for participant 0");
                         break 'global;
+                    }
+                    _ => {
+                        scale::panic!("bad data format for data from participant 0!");
+                        return;
                     }
                 };
-                id_participant_1 = *row_participant_1
-                    .get(0)
-                    .expect("cannot get id participant_1");
-            } else if id_participant_2.lt(id_participant_1).reveal() {
-                // Fetch next id_participant_2
-                let row_participant_2 = match read_row(Player::<PARTICIPANT_2>) {
-                    Some(row) => row,
+            } else if id_1.lt(id_0).reveal() {
+                // Fetch next id_participant 1
+                let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
+                id_participant_1 = match row_participant_1.next_col() {
+                    Some(Column::SecretModp(id)) => id,
                     None => {
-                        print!("done row_participant_2\n");
-                        break 'global;
+                        println!("    <-- no more data for participant 1");
+                        break;
                     }
-                }; // [25, 0]
-                id_participant_2 = *row_participant_2
-                    .get(0)
-                    .expect("cannot get id participant_2");
+                    _ => {
+                        scale::panic!("bad data format for data from participant 1!");
+                        return;
+                    }
+                };
             }
         }
     }
-}
-
-fn read_row<const P: u32>(player: Player<P>) -> Option<Slice<SecretI64>> {
-    // Because we have row like [[1], [2], [3]]
-    let row_len = SecretModp::private_input(player, Channel::<0>).reveal();
-    let row_len = i64::from(row_len) as u64;
-    print!("row_len : ", row_len as i64, "\n");
-    if row_len == 0 {
-        return None;
-    }
-
-    let mut data = Slice::uninitialized(row_len);
-
-    for row_nb in 0..row_len {
-        let col_len = SecretModp::private_input(player, Channel::<1>).reveal();
-        let col_len = i64::from(col_len) as u64;
-        print!("col_len : ", col_len as i64, "\n");
-        data.set(
-            row_nb,
-            &SecretModp::private_input(player, Channel::<2>).into(),
-        );
-    }
-
-    Some(data)
+    println!("##### End of processing");
 }
