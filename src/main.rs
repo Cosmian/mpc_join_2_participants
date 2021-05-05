@@ -1,10 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
 
-use cosmian_std::scale::{self, println, SecretModp};
+use cosmian_std::scale::{self, println};
 use cosmian_std::{prelude::*, Column, InputRow, OutputRow};
-
-const KAPPA: u64 = 40;
 
 // Players
 // PARTICIPANT_2 is just an arbiter, as MPC needs at least 3 participants
