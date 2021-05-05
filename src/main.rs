@@ -1,8 +1,10 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
 
-use cosmian_std::scale::{self, println};
+use cosmian_std::scale::{self, println, SecretModp};
 use cosmian_std::{prelude::*, Column, InputRow, OutputRow};
+
+const KAPPA: u64 = 40;
 
 // Players
 // PARTICIPANT_2 is just an arbiter, as MPC needs at least 3 participants
@@ -49,11 +51,12 @@ fn main() {
 
         loop {
             // secret comparisons are performed on 64 bit integers
-            let id_0 = SecretI64::from(id_participant_0);
-            let id_1 = SecretI64::from(id_participant_1);
+            let id_0 = SecretInteger::<32>::from(id_participant_0);
+            let id_1 = SecretInteger::<32>::from(id_participant_1);
+            // let delta: SecretI64 = SecretI64::from(id_participant_0 - id_participant_1);
             println!("- converted IDs");
 
-            if id_0.eq(id_1).reveal() {
+            if i64::from(id_0.eq(id_1).reveal()) == 1 {
                 println!(" -> match");
                 // Create the next row we are going to output to the data consumer
                 let mut output_row_0 = OutputRow::new(Player::<PARTICIPANT_0>);
@@ -67,7 +70,7 @@ fn main() {
                 // the rows will be automatically flushed to the participants
                 // this break returns to the global loop and fetches bth IDs
                 break;
-            } else if id_0.lt(id_1).reveal() {
+            } else if i64::from(id_0.lt(id_1).reveal()) == 1 {
                 println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
                 let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
@@ -83,7 +86,7 @@ fn main() {
                     }
                 };
                 println!(" <- read ID 0");
-            } else if id_1.lt(id_0).reveal() {
+            } else {
                 println!(" -> ID 1 < ID 0");
                 // Fetch next id_participant 1
                 let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
