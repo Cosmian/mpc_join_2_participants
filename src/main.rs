@@ -29,6 +29,7 @@ fn main() {
                 return;
             }
         };
+        println!(" <- read ID 0");
 
         // First fetch of id player 2
         let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
@@ -44,11 +45,13 @@ fn main() {
                 return;
             }
         };
+        println!(" <- read ID 1");
 
         loop {
             // secret comparisons are performed on 64 bit integers
             let id_0 = SecretI64::from(id_participant_0);
             let id_1 = SecretI64::from(id_participant_1);
+            println!("- converted IDs");
 
             if id_0.eq(id_1).reveal() {
                 println!(" -> match");
@@ -65,6 +68,7 @@ fn main() {
                 // this break returns to the global loop and fetches bth IDs
                 break;
             } else if id_0.lt(id_1).reveal() {
+                println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
                 let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
                 id_participant_0 = match row_participant_0.next_col() {
@@ -78,7 +82,9 @@ fn main() {
                         return;
                     }
                 };
+                println!(" <- read ID 0");
             } else if id_1.lt(id_0).reveal() {
+                println!(" -> ID 1 < ID 0");
                 // Fetch next id_participant 1
                 let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
                 id_participant_1 = match row_participant_1.next_col() {
@@ -92,6 +98,7 @@ fn main() {
                         return;
                     }
                 };
+                println!(" <- read ID 1");
             }
         }
     }
