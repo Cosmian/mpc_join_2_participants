@@ -49,12 +49,17 @@ fn main() {
 
         loop {
             // secret comparisons are performed on 64 bit integers
-            let id_0 = SecretInteger::<32>::from(id_participant_0);
-            let id_1 = SecretInteger::<32>::from(id_participant_1);
+            let id_0 = SecretInteger::<64>::from(id_participant_0);
+            let id_1 = SecretInteger::<64>::from(id_participant_1);
             // let delta: SecretI64 = SecretI64::from(id_participant_0 - id_participant_1);
             println!("- converted IDs");
-
-            if i64::from(id_0.eq(id_1).reveal()) == 1 {
+            let equality = id_0.eq(id_1);
+            println!("- computed equality");
+            let revealed = equality.reveal();
+            println!("- revealed");
+            let res = i64::from(revealed);
+            println!("- to i64");
+            if res == 1 {
                 println!(" -> match");
                 // Create the next row we are going to output to the data consumer
                 let mut output_row_0 = OutputRow::new(Player::<PARTICIPANT_0>);
