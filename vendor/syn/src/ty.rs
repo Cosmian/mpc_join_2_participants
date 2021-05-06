@@ -63,8 +63,31 @@ ast_enum_of_structs! {
         /// Tokens in type position not interpreted by Syn.
         Verbatim(TokenStream),
 
+        // The following is the only supported idiom for exhaustive matching of
+        // this enum.
+        //
+        //     match expr {
+        //         Type::Array(e) => {...}
+        //         Type::BareFn(e) => {...}
+        //         ...
+        //         Type::Verbatim(e) => {...}
+        //
+        //         #[cfg(test)]
+        //         Type::__TestExhaustive(_) => unimplemented!(),
+        //         #[cfg(not(test))]
+        //         _ => { /* some sane fallback */ }
+        //     }
+        //
+        // This way we fail your tests but don't break your library when adding
+        // a variant. You will be notified by a test failure when a variant is
+        // added, so that you can add code to handle it, but your library will
+        // continue to compile and work for downstream users in the interim.
+        //
+        // Once `deny(reachable)` is available in rustc, Type will be
+        // reimplemented as a non_exhaustive enum.
+        // https://github.com/rust-lang/rust/issues/44109#issuecomment-521781237
         #[doc(hidden)]
-        __Nonexhaustive,
+        __TestExhaustive(crate::private),
     }
 }
 
@@ -318,7 +341,6 @@ pub mod parsing {
     use crate::parse::{Parse, ParseStream, Result};
     use crate::path;
     use proc_macro2::{Punct, Spacing, TokenTree};
-    use std::iter::FromIterator;
 
     #[cfg_attr(doc_cfg, doc(cfg(feature = "parsing")))]
     impl Parse for Type {
@@ -435,9 +457,13 @@ pub mod parsing {
                         let mut elems = Punctuated::new();
                         elems.push_value(first);
                         elems.push_punct(content.parse()?);
-                        let rest: Punctuated<Type, Token![,]> =
-                            content.parse_terminated(Parse::parse)?;
-                        elems.extend(rest);
+                        while !content.is_empty() {
+                            elems.push_value(content.parse()?);
+                            if content.is_empty() {
+                                break;
+                            }
+                            elems.push_punct(content.parse()?);
+                        }
                         elems
                     },
                 }));
@@ -770,9 +796,13 @@ pub mod parsing {
                     let mut elems = Punctuated::new();
                     elems.push_value(first);
                     elems.push_punct(content.parse()?);
-                    let rest: Punctuated<Type, Token![,]> =
-                        content.parse_terminated(Parse::parse)?;
-                    elems.extend(rest);
+                    while !content.is_empty() {
+                        elems.push_value(content.parse()?);
+                        if content.is_empty() {
+                            break;
+                        }
+                        elems.push_punct(content.parse()?);
+                    }
                     elems
                 },
             })
@@ -978,12 +1008,14 @@ pub mod parsing {
                     TokenTree::Punct(Punct::new('.', Spacing::Joint)),
                     TokenTree::Punct(Punct::new('.', Spacing::Alone)),
                 ];
-                let tokens = TokenStream::from_iter(args.into_iter().zip(&dot3.spans).map(
-                    |(mut arg, span)| {
+                let tokens: TokenStream = args
+                    .into_iter()
+                    .zip(&dot3.spans)
+                    .map(|(mut arg, span)| {
                         arg.set_span(*span);
                         arg
-                    },
-                ));
+                    })
+                    .collect();
                 Type::Verbatim(tokens)
             } else if allow_mut_self && input.peek(Token![mut]) && input.peek2(Token![self]) {
                 has_mut_self = true;

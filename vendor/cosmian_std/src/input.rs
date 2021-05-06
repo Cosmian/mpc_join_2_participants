@@ -202,10 +202,12 @@ impl<const P: u32> InputRow<P> {
         self.line_consumed_deleted = true;
         let mut players_data = PLAYERS_DATA.lock().unwrap();
         // Delete the line
-        players_data
+        let line = players_data
             .get_mut(&P)
-            .expect("should have data for this player")
-            .remove(0);
+            .expect("should have data for this player");
+        if !line.is_empty() {
+            line.remove(0);
+        }
     }
 }
 
@@ -223,10 +225,12 @@ impl<const P: u32> Drop for InputRow<P> {
         if self.cursor < self.nb_col as i64 && !self.line_consumed_deleted {
             let mut players_data = PLAYERS_DATA.lock().unwrap();
             // Delete the line
-            players_data
+            let line = players_data
                 .get_mut(&P)
-                .expect("should have data for this player")
-                .remove(0);
+                .expect("should have data for this player");
+            if !line.is_empty() {
+                line.remove(0);
+            }
         }
     }
 }
