@@ -53,7 +53,7 @@ fn main() {
             let id_1 = SecretInteger::<64>::from(id_participant_1);
             // let delta: SecretI64 = SecretI64::from(id_participant_0 - id_participant_1);
             println!("- converted IDs");
-            let equality = id_0.eq(id_1);
+            let equality: SecretModp = id_0.eq(id_1);
             println!("- computed equality");
             let revealed = equality.reveal();
             println!("- revealed");
