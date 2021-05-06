@@ -15,45 +15,24 @@ fn main() {
     println!("##### Reading from players");
 
     'global: loop {
-        // First fetch of id participant 0
-        let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
-        // The id is a `SecretModp`: its value never appears in clear text in the program memory
-        let mut id_participant_0 = match row_participant_0.next_col() {
-            Some(Column::SecretModp(id)) => id,
+        // First fetch id of participant 0
+        let (mut id_s_modp_0, mut id_s_64_0) = match read_next_id(Player::<PARTICIPANT_0>) {
+            Some(res) => res,
             None => {
-                println!("    <-- no more data for participant 0");
                 break 'global;
             }
-            _ => {
-                scale::panic!("bad data format for data from participant 0!");
-                return;
-            }
         };
-        println!(" <- read ID 0");
 
-        // First fetch of id player 2
-        let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
-        // The id is a `SecretModp`: its value never appears in clear text in the program memory
-        let mut id_participant_1 = match row_participant_1.next_col() {
-            Some(Column::SecretModp(id)) => id,
+        // First fetch id of participant 1
+        let (mut id_s_modp_1, mut id_s_64_1) = match read_next_id(Player::<PARTICIPANT_1>) {
+            Some(res) => res,
             None => {
-                println!("    <-- no more data for participant 1");
                 break 'global;
             }
-            _ => {
-                scale::panic!("bad data format for data from participant 1!");
-                return;
-            }
         };
-        println!(" <- read ID 1");
 
         loop {
-            // secret comparisons are performed on 64 bit integers
-            let id_0 = SecretI64::from(id_participant_0);
-            let id_1 = SecretI64::from(id_participant_1);
-            println!("- converted IDs");
-
-            if id_0.eq(id_1).reveal() {
+            if id_s_64_0.eq(id_s_64_1).reveal() {
                 println!(" -> match");
                 // Create the next row we are going to output to the data consumer
                 let mut output_row_0 = OutputRow::new(Player::<PARTICIPANT_0>);
@@ -61,46 +40,57 @@ fn main() {
                 let mut output_row_1 = OutputRow::new(Player::<PARTICIPANT_1>);
 
                 // Send id to both participant 0 and participant 1
-                output_row_0.append(id_participant_0);
-                output_row_1.append(id_participant_1);
+                output_row_0.append(id_s_modp_0);
+                output_row_1.append(id_s_modp_1);
 
                 // the rows will be automatically flushed to the participants
                 // this break returns to the global loop and fetches bth IDs
                 break;
-            } else if id_0.lt(id_1).reveal() {
+            } else if id_s_64_0.lt(id_s_64_1).reveal() {
                 println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
-                let mut row_participant_0 = InputRow::read(Player::<PARTICIPANT_0>);
-                id_participant_0 = match row_participant_0.next_col() {
-                    Some(Column::SecretModp(id)) => id,
+                match read_next_id(Player::<PARTICIPANT_0>) {
+                    Some((id_s_modp, id_s_64)) => {
+                        id_s_modp_0 = id_s_modp;
+                        id_s_64_0 = id_s_64
+                    }
                     None => {
-                        println!("    <-- no more data for participant 0");
                         break 'global;
                     }
-                    _ => {
-                        scale::panic!("bad data format for data from participant 0!");
-                        return;
-                    }
                 };
-                println!(" <- read ID 0");
-            } else if id_1.lt(id_0).reveal() {
-                println!(" -> ID 1 < ID 0");
-                // Fetch next id_participant 1
-                let mut row_participant_1 = InputRow::read(Player::<PARTICIPANT_1>);
-                id_participant_1 = match row_participant_1.next_col() {
-                    Some(Column::SecretModp(id)) => id,
+            } else if id_s_64_1.lt(id_s_64_0).reveal() {
+                match read_next_id(Player::<PARTICIPANT_1>) {
+                    Some((id_s_modp, id_s_64)) => {
+                        id_s_modp_1 = id_s_modp;
+                        id_s_64_1 = id_s_64
+                    }
                     None => {
-                        println!("    <-- no more data for participant 1");
-                        break;
-                    }
-                    _ => {
-                        scale::panic!("bad data format for data from participant 1!");
-                        return;
+                        break 'global;
                     }
                 };
-                println!(" <- read ID 1");
             }
         }
     }
     println!("##### End of processing");
+}
+
+#[inline(always)]
+fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretI64)> {
+    let mut row_participant = InputRow::read(player);
+    let id_s_modp = match row_participant.next_col() {
+        Some(Column::SecretModp(id)) => id,
+        None => {
+            println!("    <-- no more data for participant ", P);
+            return None;
+        }
+        _ => {
+            scale::panic!("bad data format for data from participant ", P);
+            return None;
+        }
+    };
+    println!(" <- read ID ", P);
+    // secret comparisons are performed on 64 bit integers
+    let id_s_i64 = SecretI64::from(id_s_modp);
+    println!("- converted ID ", P);
+    Some((id_s_modp, id_s_i64))
 }
