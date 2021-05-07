@@ -6,8 +6,8 @@ use cosmian_std::{prelude::*, Column, InputRow, OutputRow};
 
 // Players
 // PARTICIPANT_2 is just an arbiter, as MPC needs at least 3 participants
-const PARTICIPANT_0: u32 = 0; // data provider, receives results
-const PARTICIPANT_1: u32 = 1; // data provider, receives results
+const PARTICIPANT_0: Player<0> = Player::<0>; // data provider, receives results
+const PARTICIPANT_1: Player<1> = Player::<1>; // data provider, receives results
 
 #[inline(never)]
 #[scale::main(KAPPA = 40)]
@@ -16,7 +16,7 @@ fn main() {
 
     'global: loop {
         // First fetch id of participant 0
-        let (mut id_s_modp_0, mut id_s_64_0) = match read_next_id(Player::<PARTICIPANT_0>) {
+        let (mut id_s_modp_0, mut id_s_64_0) = match read_next_id(PARTICIPANT_0) {
             Some(res) => res,
             None => {
                 break 'global;
@@ -24,7 +24,7 @@ fn main() {
         };
 
         // First fetch id of participant 1
-        let (mut id_s_modp_1, mut id_s_64_1) = match read_next_id(Player::<PARTICIPANT_1>) {
+        let (mut id_s_modp_1, mut id_s_64_1) = match read_next_id(PARTICIPANT_1) {
             Some(res) => res,
             None => {
                 break 'global;
@@ -35,9 +35,9 @@ fn main() {
             if id_s_64_0.eq(id_s_64_1).reveal() {
                 println!(" -> match");
                 // Create the next row we are going to output to the data consumer
-                let mut output_row_0 = OutputRow::new(Player::<PARTICIPANT_0>);
+                let mut output_row_0 = OutputRow::new(PARTICIPANT_0);
                 // Create the next row we are going to output to the data consumer
-                let mut output_row_1 = OutputRow::new(Player::<PARTICIPANT_1>);
+                let mut output_row_1 = OutputRow::new(PARTICIPANT_1);
 
                 // Send id to both participant 0 and participant 1
                 output_row_0.append(id_s_modp_0);
@@ -49,7 +49,7 @@ fn main() {
             } else if id_s_64_0.lt(id_s_64_1).reveal() {
                 println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
-                match read_next_id(Player::<PARTICIPANT_0>) {
+                match read_next_id(PARTICIPANT_0) {
                     Some((id_s_modp, id_s_64)) => {
                         id_s_modp_0 = id_s_modp;
                         id_s_64_0 = id_s_64
@@ -58,8 +58,8 @@ fn main() {
                         break 'global;
                     }
                 };
-            } else if id_s_64_1.lt(id_s_64_0).reveal() {
-                match read_next_id(Player::<PARTICIPANT_1>) {
+            } else {
+                match read_next_id(PARTICIPANT_1) {
                     Some((id_s_modp, id_s_64)) => {
                         id_s_modp_1 = id_s_modp;
                         id_s_64_1 = id_s_64
