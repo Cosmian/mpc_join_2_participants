@@ -2,7 +2,6 @@
 // Copyright (c) 2021, Cosmian Tech SAS, 53-55 rue La Boétie, Paris, France.
 
 use crate::array::*;
-use crate::bit_protocols::*;
 use crate::circuits::*;
 use crate::fixed_point::*;
 use crate::floating_point::*;
@@ -78,13 +77,10 @@ impl Float for SecretIEEE {}
 
 impl<const K: u64, const F: u64> Float for ClearFixed<K, F>
 where
-    ConstU64<{ K - F }>: ,
-    ConstU64<{ F + 1 }>: ,
     ConstU64<{ K + 1 }>: ,
     ConstU64<{ K - 1 }>: ,
     ConstU64<{ 2 * F }>: ,
     ConstU64<{ 2 * K }>: ,
-    ConstU64<{ 2 * (K - F) }>: ,
     ConstI32<{ f_as_i32(F) }>: ,
     ConstI32<{ f_as_i32(K) }>: ,
     ConstU64<{ ClearFixed::<K, F>::THETA }>: ,
@@ -93,13 +89,10 @@ where
 
 impl<const K: u64, const F: u64, const KAPPA: u64> Float for SecretFixed<K, F, KAPPA>
 where
-    ConstU64<{ K - F }>: ,
-    ConstU64<{ F + 1 }>: ,
     ConstU64<{ K + 1 }>: ,
     ConstU64<{ K - 1 }>: ,
     ConstU64<{ 2 * K }>: ,
     ConstU64<{ 2 * F }>: ,
-    ConstU64<{ 2 * (K - F) }>: ,
     ConstI32<{ f_as_i32(F) }>: ,
     ConstI32<{ f_as_i32(K) }>: ,
     ConstU64<{ SecretFixed::<K, F, KAPPA>::THETA }>: ,
@@ -297,37 +290,38 @@ impl SecretIEEE {
     }
     #[inline(always)]
     pub fn cos(self) -> SecretIEEE {
-        let (w, _s1, s2) = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
-        kernel_cos::<SecretIEEE, ClearIEEE>(w, s2)
+        let ts = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
+        kernel_cos::<SecretIEEE, ClearIEEE>(*ts.get_unchecked(0), *ts.get_unchecked(2))
     }
     #[inline(always)]
     pub fn cosh(self) -> SecretIEEE {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 + a2) * ClearIEEE::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) + *e2.get_unchecked(1)) * ClearIEEE::from(0.5);
         ans
     }
     #[inline(always)]
     pub fn sin(self) -> SecretIEEE {
-        let (w, s1, _s2) = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
-        kernel_sin::<SecretIEEE, ClearIEEE>(w, s1)
+        let ts = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
+        kernel_sin::<SecretIEEE, ClearIEEE>(*ts.get_unchecked(0), *ts.get_unchecked(1))
     }
     #[inline(always)]
     pub fn sinh(self) -> SecretIEEE {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) * ClearIEEE::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1)) * ClearIEEE::from(0.5);
         ans
     }
     #[inline(always)]
     pub fn tan(self) -> SecretIEEE {
-        let (w, s1, s2) = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
-        let ans1 = kernel_sin::<SecretIEEE, ClearIEEE>(w, s1);
-        let ans2 = kernel_cos::<SecretIEEE, ClearIEEE>(w, s2);
+        let ts = TrigSubroutine::<SecretIEEE, ClearIEEE, SecretBit>(self);
+        let ans1 = kernel_sin::<SecretIEEE, ClearIEEE>(*ts.get_unchecked(0), *ts.get_unchecked(1));
+        let ans2 = kernel_cos::<SecretIEEE, ClearIEEE>(*ts.get_unchecked(0), *ts.get_unchecked(2));
         ans1 / ans2
     }
     #[inline(always)]
     pub fn tanh(self) -> SecretIEEE {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) / (a1 + a2);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1))
+            / (*e2.get_unchecked(0) + *e2.get_unchecked(1));
         ans
     }
     #[inline(always)]
@@ -384,11 +378,14 @@ impl SecretIEEE {
         ans
     }
     #[inline(always)]
-    pub fn exp_2(self) -> (SecretIEEE, SecretIEEE) {
+    pub fn exp_2(self) -> Array<SecretIEEE, 2> {
         let log2 = ClearIEEE::ln2();
         let ans1 = (self / log2).exp2();
         let ans2 = ClearIEEE::from(1_i64) / ans1;
-        (ans1, ans2)
+        let mut ans: Array<SecretIEEE, 2> = Array::uninitialized();
+        ans.set(0, &ans1);
+        ans.set(1, &ans2);
+        ans
     }
 }
 
@@ -396,11 +393,7 @@ impl SecretIEEE {
 /*           ClearFixed         */
 /********************************/
 
-impl<const K: u64, const F: u64> FAbs for ClearFixed<K, F>
-where
-    ConstU64<{ K + 1 }>: ,
-    ConstU64<{ K - 1 }>: ,
-{
+impl<const K: u64, const F: u64> FAbs for ClearFixed<K, F> {
     fn fabs(self) -> ClearFixed<K, F> {
         let s = self.rep().ltz();
         let v = (ClearModp::from(1) - s - s) * self.rep().rep();
@@ -409,12 +402,9 @@ where
     }
 }
 
-impl<const K: u64, const F: u64> Floor for ClearFixed<K, F>
-where
-    ConstU64<{ K - F }>: ,
-{
+impl<const K: u64, const F: u64> Floor for ClearFixed<K, F> {
     fn floor(self) -> Self {
-        let v = self.rep().Trunc(ConstU64::<{ K - F }>, ConstBool::<true>);
+        let v = self.rep().Trunc(K - F, true);
         ClearFixed::from(v)
     }
 }
@@ -427,7 +417,6 @@ where
     ConstU64<{ K + 1 }>: ,
     ConstU64<{ K - 1 }>: ,
     ConstU64<{ 2 * K }>: ,
-    ConstU64<{ K - F }>: ,
     ConstU64<{ 2 * (K - F) }>: ,
     ConstI32<{ f_as_i32(F) }>: ,
     ConstI32<{ f_as_i32(K) }>: ,
@@ -442,19 +431,31 @@ where
         ans
     }
     pub fn sin(self) -> Self {
-        let (w, s1, _s2) = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
-        let ans = kernel_sin::<ClearFixed<K, F>, ClearFixed<K, F>>(w, s1);
+        let ts = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
+        let ans = kernel_sin::<ClearFixed<K, F>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(1),
+        );
         ans
     }
     pub fn cos(self) -> Self {
-        let (w, _s1, s2) = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
-        let ans = kernel_cos::<ClearFixed<K, F>, ClearFixed<K, F>>(w, s2);
+        let ts = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
+        let ans = kernel_cos::<ClearFixed<K, F>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(2),
+        );
         ans
     }
     pub fn tan(self) -> Self {
-        let (w, s1, s2) = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
-        let ans1 = kernel_sin::<ClearFixed<K, F>, ClearFixed<K, F>>(w, s1);
-        let ans2 = kernel_cos::<ClearFixed<K, F>, ClearFixed<K, F>>(w, s2);
+        let ts = TrigSubroutine::<ClearFixed<K, F>, ClearFixed<K, F>, ClearModp>(self);
+        let ans1 = kernel_sin::<ClearFixed<K, F>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(1),
+        );
+        let ans2 = kernel_cos::<ClearFixed<K, F>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(2),
+        );
         ans1 / ans2
     }
     pub fn asin(self) -> Self {
@@ -487,42 +488,46 @@ where
     }
 
     // Computes exp(x) and exp(-x)
-    fn exp_2(self) -> (Self, Self) {
+    fn exp_2(self) -> Array<Self, 2> {
         let log2 = ClearFixed::ln2();
         let ans1 = (self / log2).exp2();
         let ans2 = ClearFixed::from(1_i64) / ans1;
-        (ans1, ans2)
+        let mut ans: Array<Self, 2> = Array::uninitialized();
+        ans.set(0, &ans1);
+        ans.set(1, &ans2);
+        ans
     }
 
     // Computes sinh(x)
     pub fn sinh(self) -> Self {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) * ClearFixed::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1)) * ClearFixed::from(0.5);
         ans
     }
 
     // Computes cosh(x)
     pub fn cosh(self) -> Self {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 + a2) * ClearFixed::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) + *e2.get_unchecked(1)) * ClearFixed::from(0.5);
         ans
     }
 
     // Computes tanh(x)
     pub fn tanh(self) -> Self {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) / (a1 + a2);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1))
+            / (*e2.get_unchecked(0) + *e2.get_unchecked(1));
         ans
     }
 
     // Computes log2(x)
     pub fn log2(self) -> Self {
-        let fl: ClearFloat<F, F> = ClearFloat::from(self);
-        let vv: ClearFixed<K, F> = ClearFixed::set(ClearInteger::set(fl.clone().v()));
+        let fl: ClearFloat<F, F, true> = ClearFloat::from(self);
+        let vv: ClearFixed<K, F> = ClearFixed::set(ClearInteger::set(fl.v()));
         let mut a = kernel_log2::<ClearFixed<K, F>, ClearFixed<K, F>>(vv);
-        let pp: ClearFixed<K, F> = ClearFixed::from(fl.clone().p() + ClearModp::from(F as i64));
+        let pp: ClearFixed<K, F> = ClearFixed::from(fl.p() + ClearModp::from(F as i64));
         a = a + pp;
-        let mask = (ClearModp::from(1) - fl.clone().z()) * (ClearModp::from(1) - fl.clone().s());
+        let mask = (ClearModp::from(1) - fl.z()) * (ClearModp::from(1) - fl.s());
         let t = a.rep().rep() * mask;
         ClearFixed::set(ClearInteger::set(t))
     }
@@ -557,19 +562,15 @@ where
     }
 }
 
-impl<const K: u64, const F: u64, const KAPPA: u64> Floor for SecretFixed<K, F, KAPPA>
-where
-    ConstU64<{ K - F }>: ,
-{
+impl<const K: u64, const F: u64, const KAPPA: u64> Floor for SecretFixed<K, F, KAPPA> {
     fn floor(self) -> Self {
-        let v = self.rep().Trunc(ConstU64::<{ K - F }>, ConstBool::<true>);
+        let v = self.rep().Trunc(K - F, true);
         SecretFixed::from(v)
     }
 }
 
 impl<const K: u64, const F: u64, const KAPPA: u64> SecretFixed<K, F, KAPPA>
 where
-    ConstU64<{ K - F }>: ,
     ConstU64<{ 2 * K }>: ,
     ConstU64<{ 2 * F }>: ,
     ConstU64<{ 2 * (K - F) }>: ,
@@ -581,7 +582,6 @@ where
     ConstI32<{ f_as_i32(K) }>: ,
     ConstU64<{ ClearFixed::<K, F>::THETA }>: ,
     ConstU64<{ SecretFixed::<K, F, KAPPA>::THETA }>: ,
-    ConstU64<{ CeilLog2::<K>::RESULT }>: ,
     ConstU64<{ K - F - 1 }>: ,
 {
     pub fn ceil(self) -> Self {
@@ -592,28 +592,41 @@ where
         ans
     }
     pub fn sin(self) -> Self {
-        let (w, s1, _s2) =
-            TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
-        let ans = kernel_sin::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(w, s1);
+        let ts = TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
+        let ans = kernel_sin::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(1),
+        );
         ans
     }
     pub fn cos(self) -> Self {
-        let (w, _s1, s2) =
-            TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
-        let ans = kernel_cos::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(w, s2);
+        let ts = TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
+        let ans = kernel_cos::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(2),
+        );
         ans
     }
     pub fn tan(self) -> Self {
-        let (w, s1, s2) =
-            TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
-        let ans1 = kernel_sin::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(w, s1);
-        let ans2 = kernel_cos::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(w, s2);
+        let ts = TrigSubroutine::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
+        let ans1 = kernel_sin::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(1),
+        );
+        let ans2 = kernel_cos::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(
+            *ts.get_unchecked(0),
+            *ts.get_unchecked(2),
+        );
         ans1 / ans2
     }
+    // For some reason there is a bug if this is not inline(always)
+    #[inline(always)]
     pub fn asin(self) -> Self {
         let ans = kernel_asin::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
         ans
     }
+    // For some reason there is a bug if this is not inline(always)
+    #[inline(always)]
     pub fn acos(self) -> Self {
         let ans = kernel_acos::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>, SecretModp>(self);
         ans
@@ -640,43 +653,48 @@ where
     }
 
     // Computes exp(x) and exp(-x)
-    fn exp_2(self) -> (Self, Self) {
+    fn exp_2(self) -> Array<Self, 2> {
         let log2 = ClearFixed::ln2();
         let ans1 = (self / log2).exp2();
         let ans2 = ClearFixed::from(1_i64) / ans1;
-        (ans1, ans2)
+        let mut ans: Array<Self, 2> = Array::uninitialized();
+        ans.set(0, &ans1);
+        ans.set(1, &ans2);
+        ans
     }
 
     // Computes sinh(x)
     pub fn sinh(self) -> Self {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) * ClearFixed::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1)) * ClearFixed::from(0.5);
         ans
     }
 
     // Computes cosh(x)
     pub fn cosh(self) -> Self {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 + a2) * ClearFixed::from(0.5);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) + *e2.get_unchecked(1)) * ClearFixed::from(0.5);
         ans
     }
 
     // Computes tanh(x)
     pub fn tanh(self) -> SecretFixed<K, F, KAPPA> {
-        let (a1, a2) = self.exp_2();
-        let ans = (a1 - a2) / (a1 + a2);
+        let e2 = self.exp_2();
+        let ans = (*e2.get_unchecked(0) - *e2.get_unchecked(1))
+            / (*e2.get_unchecked(0) + *e2.get_unchecked(1));
         ans
     }
 
     // Computes log2(x)
     pub fn log2(self) -> Self {
-        let fl: SecretFloat<F, F, KAPPA> = SecretFloat::from(self);
-        let vv: SecretFixed<K, F, KAPPA> = SecretFixed::set(SecretInteger::set(fl.clone().v()));
+        // Here we can set DETECT_OVERFLOW to false, as we only use fl for
+        // access, and no arithmetic.
+        let fl: SecretFloat<F, F, KAPPA, false> = SecretFloat::from(self);
+        let vv: SecretFixed<K, F, KAPPA> = SecretFixed::set(SecretInteger::set(fl.v()));
         let mut a = kernel_log2::<SecretFixed<K, F, KAPPA>, ClearFixed<K, F>>(vv);
-        let pp: SecretFixed<K, F, KAPPA> =
-            SecretFixed::from(fl.clone().p() + ClearModp::from(F as i64));
+        let pp: SecretFixed<K, F, KAPPA> = SecretFixed::from(fl.p() + ClearModp::from(F as i64));
         a = a + pp;
-        let mask = (ClearModp::from(1) - fl.clone().z()) * (ClearModp::from(1) - fl.s());
+        let mask = (ClearModp::from(1) - fl.z()) * (ClearModp::from(1) - fl.s());
         let t = a.rep().rep() * mask;
         SecretFixed::set(SecretInteger::set(t))
     }
@@ -691,5 +709,35 @@ where
     pub fn log10(self) -> Self {
         let v = self.log2() * ClearFixed::from(0.30102999566398119521373889472449302677);
         v
+    }
+}
+
+impl<const V: u64, const P: u64, const DETECT_OVERFLOW: bool> FAbs
+    for ClearFloat<V, P, DETECT_OVERFLOW>
+{
+    #[inline(always)]
+    fn fabs(self) -> ClearFloat<V, P, DETECT_OVERFLOW> {
+        let mut param_new: Array<ClearModp, 5> = Array::uninitialized();
+        param_new.set(0, &self.v());
+        param_new.set(1, &self.p());
+        param_new.set(2, &self.z());
+        param_new.set(3, &(ClearModp::from(0)));
+        param_new.set(4, &self.err());
+        ClearFloat::set(param_new)
+    }
+}
+
+impl<const V: u64, const P: u64, const KAPPA: u64, const DETECT_OVERFLOW: bool> FAbs
+    for SecretFloat<V, P, KAPPA, DETECT_OVERFLOW>
+{
+    #[inline(always)]
+    fn fabs(self) -> SecretFloat<V, P, KAPPA, DETECT_OVERFLOW> {
+        let mut param_new: Array<SecretModp, 5> = Array::uninitialized();
+        param_new.set(0, &self.v());
+        param_new.set(1, &self.p());
+        param_new.set(2, &self.z());
+        param_new.set(3, &(SecretModp::from(0)));
+        param_new.set(4, &self.err());
+        SecretFloat::set(param_new)
     }
 }

@@ -1,9 +1,7 @@
-
 // Copyright (c) 2021, COSIC-KU Leuven, Kasteelpark Arenberg 10, bus 2452, B-3001 Leuven-Heverlee, Belgium.
 // Copyright (c) 2021, Cosmian Tech SAS, 53-55 rue La Boétie, Paris, France.
 
 use crate::array::*;
-use crate::bit_protocols::*;
 use crate::fixed_point::*;
 use crate::ieee::*;
 use crate::integer::*;
@@ -30,7 +28,7 @@ use scale::*;
 */
 
 #[allow(non_snake_case)]
-pub fn TrigSubroutine<S, C, O>(x: S) -> (S, S, S)
+pub fn TrigSubroutine<S, C, O>(x: S) -> Array<S, 3>
 where
     S: Float,
     S: From<O>,
@@ -63,7 +61,11 @@ where
     w = s2 * (pi - w - w) + w;
     s1 = S::from(1_i64) - s1 - s1;
     s2 = S::from(1_i64) - s2 - s2;
-    (w, s1, s2)
+    let mut ans: Array<S, 3> = Array::uninitialized();
+    ans.set(0, &w);
+    ans.set(1, &s1);
+    ans.set(2, &s2);
+    ans
 }
 
 // The Kernel Sin Routine
@@ -127,6 +129,7 @@ where
 /* Code for generic atan, asin and acos */
 
 // The Kernel atan Routine
+#[inline(never)]
 pub fn kernel_atan<S, C, O>(x: S) -> S
 where
     S: Float,
@@ -190,6 +193,7 @@ where
 }
 
 // The Kernel asin Routine
+#[inline(always)]
 pub fn kernel_asin<S, C, O>(x: S) -> S
 where
     S: Float,
@@ -218,6 +222,7 @@ where
 }
 
 // The Kernel acos Routine
+#[inline(always)]
 pub fn kernel_acos<S, C, O>(x: S) -> S
 where
     S: Float,
@@ -293,13 +298,9 @@ where
 impl<const K: u64, const F: u64, const KAPPA: u64> Pow2 for SecretFixed<K, F, KAPPA>
 where
     ConstI32<{ f_as_i32(F) }>: ,
-    ConstU64<{ CeilLog2::<K>::RESULT }>: ,
 {
     fn pow2(self) -> SecretFixed<K, F, KAPPA> {
-        let v = self
-            .rep()
-            .Trunc(ConstU64::<{ F }>, ConstBool::<false>)
-            .rep();
+        let v = self.rep().Trunc(F, false).rep();
         let pow = v + ClearModp::from(f_as_i32(F) as i64);
         let y = Pow2::<K, KAPPA>(pow);
         let z: SecretInteger<K, KAPPA> = SecretInteger::from(y);

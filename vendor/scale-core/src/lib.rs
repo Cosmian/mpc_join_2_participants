@@ -137,10 +137,10 @@ impl<T: StoreInMem<i64>> StoreInMem<(i64, i64)> for Option<T> {
 impl<T: LoadFromMem<i64>> LoadFromMem<(i64, i64)> for Option<T> {
     fn load_from_mem(idk: (i64, i64)) -> Option<T> {
         let ind = i64::load_from_mem(idk.0);
-        return match ind {
+        match ind {
             1 => Some(T::load_from_mem(idk.1)),
             _ => None,
-        };
+        }
     }
 }
 
@@ -270,6 +270,33 @@ extern "Rust" {
     fn pop_secret_bit() -> RawSecretBit;
     /// A helper for multi-return-value instructions to extract the next instruction
     fn pop_secret_i64() -> SecretI64;
+    // A helper for bit operations [again here only do one at a time for now]
+    //   - Let the assembler to the merging
+    fn __bit() -> SecretModp;
+}
+
+#[inline(always)]
+#[cfg(not(feature = "emulate"))]
+pub fn __triple() -> (SecretModp, SecretModp, SecretModp) {
+    extern "C" {
+        fn __triple();
+    }
+    unsafe {
+        __triple();
+        (pop_secret_modp(), pop_secret_modp(), pop_secret_modp())
+    }
+}
+
+#[inline(always)]
+#[cfg(not(feature = "emulate"))]
+pub fn __square() -> (SecretModp, SecretModp) {
+    extern "C" {
+        fn __square();
+    }
+    unsafe {
+        __square();
+        (pop_secret_modp(), pop_secret_modp())
+    }
 }
 
 /// We reserve 1000 memory entries for the testing data
@@ -333,6 +360,12 @@ pub fn __square() -> (SecretModp, SecretModp) {
     (s, s)
 }
 
+#[cfg(feature = "emulate")]
+pub unsafe fn __bit() -> SecretModp {
+    let s = SecretModp::from(0);
+    s
+}
+
 pub trait Test {
     #[track_caller]
     fn test(self);
@@ -378,7 +411,35 @@ macro_rules! __main {
         type SecretFixed<const K: u64, const F: u64> =
             scale_std::fixed_point::SecretFixed<K, F, $kappa>;
         type SecretFloat<const V: u64, const P: u64> =
-            scale_std::floating_point::SecretFloat<V, P, $kappa>;
+            scale_std::floating_point::SecretFloat<V, P, $kappa, true>;
+        type ClearFloat<const V: u64, const P: u64> =
+            scale_std::floating_point::ClearFloat<V,P,true>;
+        #[cfg(not(test))]
+        mod helper {
+            #[no_mangle]
+            fn main() {
+                extern "Rust" {
+                    fn init_wasm_heap_memory();
+                }
+                unsafe {
+                    init_wasm_heap_memory();
+                }
+                super::main();
+                #[cfg(feature = "emulate")]
+                $crate::exit(0);
+            }
+        }
+    };
+    (KAPPA = $kappa:expr; DETECT_OVERFLOW = $detect_overflow:expr) => {
+        use $crate::print;
+        use $crate::*;
+        type SecretInteger<const K: u64> = scale_std::integer::SecretInteger<K, $kappa>;
+        type SecretFixed<const K: u64, const F: u64> =
+            scale_std::fixed_point::SecretFixed<K, F, $kappa>;
+        type SecretFloat<const V: u64, const P: u64> =
+            scale_std::floating_point::SecretFloat<V, P, $kappa, $detect_overflow>;
+        type ClearFloat<const V: u64, const P: u64> =
+            scale_std::floating_point::ClearFloat<V,P,$detect_overflow>
         #[cfg(not(test))]
         mod helper {
             #[no_mangle]
@@ -435,6 +496,10 @@ pub trait ScaleCmpZ<A> {
 
 pub trait Rand {
     fn rand(self) -> i64;
+}
+
+pub trait Randomize {
+    fn randomize() -> Self;
 }
 
 #[macro_export]

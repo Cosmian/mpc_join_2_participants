@@ -13,13 +13,13 @@
 [package]
 edition = "2018"
 name = "scale_std"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Oliver Scherer <oliver.scherer@cosmian.com>", "Nigel P. Smart", "Benjamin Coenen <benjamin.coenen@cosmian.com>"]
 description = "datastructures and algorithms to be run on the SCALE engine"
 license-file = "License.txt"
 repository = "https://github.com/KULeuven-COSIC/SCALE-MAMBA"
 [dependencies.scale]
-version = "0.1.0"
+version = "0.1.2"
 package = "scale-core"
 
 [features]

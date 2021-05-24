@@ -13,7 +13,7 @@
 [package]
 edition = "2018"
 name = "scale_documentation"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Oliver Scherer <oliver.scherer@cosmian.com>", "Benjamin Coenen <benjamin.coenen@cosmian.com>"]
 description = "structured SCALE assembly documentation"
 license-file = "License.txt"
@@ -26,7 +26,7 @@ path = "instructions.rs"
 name = "documentation"
 path = "documentation.rs"
 [dependencies.documentation_parser]
-version = "0.1.0"
+version = "0.1.2"
 package = "scale_documentation_parser"
 
 [dependencies.eyre]

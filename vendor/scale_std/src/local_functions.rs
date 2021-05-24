@@ -1,7 +1,7 @@
-
 // Copyright (c) 2021, COSIC-KU Leuven, Kasteelpark Arenberg 10, bus 2452, B-3001 Leuven-Heverlee, Belgium.
 // Copyright (c) 2021, Cosmian Tech SAS, 53-55 rue La Boétie, Paris, France.
 
+use crate::array::*;
 use crate::matrix::Matrix;
 use scale::*;
 
@@ -331,16 +331,15 @@ pub fn from_fix(x: ClearModp, k: i64, f: i64) -> i64 {
 
 #[inline(always)]
 #[allow(non_snake_case)]
-pub fn to_float(
-    a: i64,
-    vlen: i64,
-    plen: i64,
-) -> (ClearModp, ClearModp, ClearModp, ClearModp, ClearModp) {
-    let (v, p, z, s, err) = unsafe {
-        execute_local_function!(TO_FLOAT(a, vlen, plen) -> 
-                                ClearModp, ClearModp, ClearModp, ClearModp, ClearModp)
-    };
-    (v, p, z, s, err)
+pub fn to_float(a: i64, vlen: i64, plen: i64) -> Array<ClearModp, 5> {
+    let x = unsafe { execute_local_function!(TO_FLOAT(a, vlen, plen) -> Array<ClearModp, 5>) };
+    let mut ans: Array<ClearModp, 5> = Array::uninitialized();
+    ans.set(0, &x.get_unchecked(4));
+    ans.set(1, &x.get_unchecked(3));
+    ans.set(2, &x.get_unchecked(2));
+    ans.set(3, &x.get_unchecked(1));
+    ans.set(4, &x.get_unchecked(0));
+    ans
 }
 
 #[inline(always)]

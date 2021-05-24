@@ -13,7 +13,7 @@
 [package]
 edition = "2018"
 name = "cosmian_std"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Benjamin Coenen <benjamin.coenen@cosmian.com>"]
 description = "Cosmian std lib to write Rust MPC programs with easier abstractions and helpers"
 readme = "README.md"
@@ -24,11 +24,11 @@ version = "1.5.2"
 optional = true
 
 [dependencies.scale]
-version = "0.1.1"
+version = "0.1"
 package = "scale-core"
 
 [dependencies.scale_std]
-version = "0.1.0"
+version = "0.1"
 
 [dependencies.serde_json]
 version = "1.0.61"

@@ -22,11 +22,7 @@ fn Secret_MSB<const K: u64, const KAPPA: u64>(
     _: ConstU64<KAPPA>,
 ) -> Array<SecretModp, K> {
     let x_order = BitDec::<K, K, KAPPA>(b);
-    // Invert x
-    let mut x: Slice<SecretModp> = Slice::uninitialized(K);
-    for i in 0..K {
-        x.set(i, &*x_order.get_unchecked(K - 1 - i));
-    }
+    let x = x_order.reverse();
     let y = x.PreOr();
     let mut z: Array<SecretModp, K> = Array::uninitialized();
     for i in 0..(K - 1) {
@@ -44,12 +40,8 @@ fn Secret_MSB<const K: u64, const KAPPA: u64>(
 // generics?
 #[allow(non_snake_case)]
 fn Clear_MSB<const K: u64>(b: ClearModp, _: ConstU64<K>) -> Array<ClearModp, K> {
-    let x_order = BitDec_ClearModp(b, K);
-    // Invert x
-    let mut x: Slice<ClearModp> = Slice::uninitialized(K);
-    for i in 0..K {
-        x.set(i, &*x_order.get_unchecked(K - 1 - i));
-    }
+    let x_order: Slice<ClearModp> = Slice::bit_decomposition_ClearModp(b, K);
+    let x = x_order.reverse();
     let y = x.PreOr();
     let mut z: Array<ClearModp, K> = Array::uninitialized();
     for i in 0..(K - 1) {
@@ -69,7 +61,7 @@ fn Secret_norm_simplified_SQ<const K: u64, const KAPPA: u64>(
     b: SecretModp,
     _: ConstU64<K>,
     _: ConstU64<KAPPA>,
-) -> (SecretModp, SecretModp) {
+) -> Array<SecretModp, 2> {
     let z = Secret_MSB(b, ConstU64::<K>, ConstU64::<KAPPA>);
 
     // Construct m
@@ -80,19 +72,21 @@ fn Secret_norm_simplified_SQ<const K: u64, const KAPPA: u64>(
 
     // Construct w, changes from what is on the paper
     let mut w = SecretModp::from(0);
-    for i in 1..(K / 2 + 1) {
+    for i in 1..(K / 2) {
         let wi = *z.get_unchecked(2 * i - 1) + *z.get_unchecked(2 * i);
         w = w + modp_two_power(i) * wi;
     }
-
-    return (m_odd, w);
+    let mut ans: Array<SecretModp, 2> = Array::uninitialized();
+    ans.set(0, &m_odd);
+    ans.set(1, &w);
+    ans
 }
 
 // XXXX Seems very wasteful to define the same function
 // roughly the same again. Any way of fixing this with
 // generics?
 #[allow(non_snake_case)]
-fn Clear_norm_simplified_SQ<const K: u64>(b: ClearModp, _: ConstU64<K>) -> (ClearModp, ClearModp) {
+fn Clear_norm_simplified_SQ<const K: u64>(b: ClearModp, _: ConstU64<K>) -> Array<ClearModp, 2> {
     let z = Clear_MSB(b, ConstU64::<K>);
 
     // Construct m
@@ -107,8 +101,10 @@ fn Clear_norm_simplified_SQ<const K: u64>(b: ClearModp, _: ConstU64<K>) -> (Clea
         let wi = *z.get_unchecked(2 * i - 1) + *z.get_unchecked(2 * i);
         w = w + modp_two_power(i) * wi;
     }
-
-    return (m_odd, w);
+    let mut ans: Array<ClearModp, 2> = Array::uninitialized();
+    ans.set(0, &m_odd);
+    ans.set(1, &w);
+    ans
 }
 
 /* For use when 3K>=3F, i.e. K>=F
@@ -118,8 +114,6 @@ impl<const K: u64, const F: u64, const KAPPA: u64> Sqrt for SecretFixed<K, F, KA
 where
     ConstU64<{ 2 * K }>: ,
     ConstU64<{ 2 * F }>: ,
-    ConstU64<{ 2 * (K - F) }>: ,
-    ConstU64<{ F + 1 }>: ,
     ConstU64<{ K + 1 }>: ,
     ConstU64<{ K - 1 }>: ,
     ConstU64<{ SecretFixed::<K, F, KAPPA>::THETA }>: ,
@@ -130,8 +124,9 @@ where
         //   theta = max(log_2 K, 6) = max(THETA+1.2,6) approx max(THETA+2,6)
         let theta = max(SecretFixed::<K, F, KAPPA>::THETA + 2, 6);
         let Fmod2 = ClearModp::from((F % 2) as i64);
-        let (mut m_odd, mut w) =
-            Secret_norm_simplified_SQ(self.rep().rep(), ConstU64::<K>, ConstU64::<KAPPA>);
+        let SnsSQ = Secret_norm_simplified_SQ(self.rep().rep(), ConstU64::<K>, ConstU64::<KAPPA>);
+        let mut m_odd = *SnsSQ.get_unchecked(0);
+        let mut w = *SnsSQ.get_unchecked(1);
         m_odd = m_odd + (ClearModp::from(1) - m_odd - m_odd) * Fmod2;
         let m_odd_fx: SecretFixed<K, F, KAPPA> = SecretFixed::from(m_odd);
         w = w + w * (ClearModp::from(1) - m_odd) * Fmod2;
@@ -174,8 +169,6 @@ impl<const K: u64, const F: u64> Sqrt for ClearFixed<K, F>
 where
     ConstU64<{ 2 * K }>: ,
     ConstU64<{ 2 * F }>: ,
-    ConstU64<{ 2 * (K - F) }>: ,
-    ConstU64<{ F + 1 }>: ,
     ConstU64<{ K + 1 }>: ,
     ConstU64<{ K - 1 }>: ,
     ConstU64<{ ClearFixed::<K, F>::THETA }>: ,
@@ -188,7 +181,9 @@ where
         //   theta = max(log_2 K, 6) = max(THETA+1.2,6) approx max(THETA+2,6)
         let theta = max(ClearFixed::<K, F>::THETA + 2, 6);
         let Fmod2 = ClearModp::from((F % 2) as i64);
-        let (mut m_odd, mut w) = Clear_norm_simplified_SQ(self.rep().rep(), ConstU64::<K>);
+        let SnsSQ = Clear_norm_simplified_SQ(self.rep().rep(), ConstU64::<K>);
+        let mut m_odd = *SnsSQ.get_unchecked(0);
+        let mut w = *SnsSQ.get_unchecked(1);
         m_odd = m_odd + (ClearModp::from(1) - m_odd - m_odd) * Fmod2;
         let m_odd_fx: ClearFixed<K, F> = ClearFixed::from(m_odd);
         w = w + w * (ClearModp::from(1) - m_odd) * Fmod2;

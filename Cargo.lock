@@ -16,9 +16,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cosmian_std"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38d7ba79c79c6b609a32e871ea5be29ea42872d19fb590108e746f1076c12840"
+checksum = "65236f1a44cc6c8d60946173569fe25c209ade1150e86f662cefb5a378cf1eac"
 dependencies = [
  "once_cell",
  "scale-core",
@@ -106,9 +106,9 @@ checksum = "dc0e1f259c92177c30a4c9d177246edd0a3568b25756a977d0632cf8fa37e905"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.26"
+version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a152013215dca273577e18d2bf00fa862b89b24169fb78c4c95aeb07992c9cec"
+checksum = "f0d8caf72986c1a598726adc988bb5984792ef84f5ee5aa50209145ee8077038"
 dependencies = [
  "unicode-xid",
 ]
@@ -130,9 +130,9 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "scale-core"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6392f535433b89fbf2e1fcf09e665f24b8e3cb72eb24f84bf67693ce1e3b991b"
+checksum = "c14f8d981289167ccce5e4d051d6c16fab19ef193d686d7569823eb444b77ae8"
 dependencies = [
  "lazy_static",
  "num-bigint",
@@ -143,9 +143,9 @@ dependencies = [
 
 [[package]]
 name = "scale_documentation"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ded3837c4c4aff612f4ae01cce8b357574ab73543045653696c3a1d17634835"
+checksum = "37046d309407e9257c835ae7969a9657e416b8ef0d2053b0dc67d2c97e29ae69"
 dependencies = [
  "eyre",
  "lazy_static",
@@ -154,9 +154,9 @@ dependencies = [
 
 [[package]]
 name = "scale_documentation_parser"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90761e20a59a46e2b934d42f3ce69c0771c4eb8abe3c285e2aa310c2467f9b04"
+checksum = "7b0a4631cca1850435408d5c9dd4383b698a142444dfdac8dce1d73ed716970f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -165,9 +165,9 @@ dependencies = [
 
 [[package]]
 name = "scale_impl_generator"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c93cc602fd4f6b68ae86c3d8396f358e625cdadbc4da3bc5249c9c2a7645ed99"
+checksum = "ab2f4d09d62a6f02eaf1f68c268e38ade90f1eb4008b1ba57f46dd1c3243a9e5"
 dependencies = [
  "num-bigint",
  "num-integer",
@@ -181,18 +181,18 @@ dependencies = [
 
 [[package]]
 name = "scale_std"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40282f20adf68e85cbe82b06d50b4e7b3bd89000e814e73ebf8b87480ea7235c"
+checksum = "1e9e016bf6aeadd22cadb89c74bf0351c4147a505ee3fe300b28b6dd9eecdf46"
 dependencies = [
  "scale-core",
 ]
 
 [[package]]
 name = "serde"
-version = "1.0.125"
+version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "558dc50e1a5a5fa7112ca2ce4effcb321b0300c0d4ccf0776a9f60cd89031171"
+checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 
 [[package]]
 name = "serde_json"
