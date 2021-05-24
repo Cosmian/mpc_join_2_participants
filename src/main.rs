@@ -33,7 +33,7 @@ fn main() {
 
         loop {
             if i64::from(id_s_64_0.eq(id_s_64_1).reveal()) == 1 {
-                // println!(" -> match");
+                println!(" -> match");
                 // Create the next row we are going to output to the data consumer
                 let mut output_row_0 = OutputRow::new(PARTICIPANT_0);
                 // Create the next row we are going to output to the data consumer
@@ -47,7 +47,7 @@ fn main() {
                 // this break returns to the global loop and fetches bth IDs
                 break;
             } else if i64::from(id_s_64_0.lt(id_s_64_1).reveal()) == 1 {
-                // println!(" -> ID 0 < ID 1");
+                println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
                 match read_next_id(PARTICIPANT_0) {
                     Some((id_s_modp, id_s_64)) => {
@@ -75,7 +75,7 @@ fn main() {
 }
 
 #[inline(always)]
-fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretInteger<64>)> {
+fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretInteger<32>)> {
     let mut row_participant = InputRow::read(player);
     let id_s_modp = match row_participant.next_col() {
         Some(Column::SecretModp(id)) => id,
@@ -89,8 +89,8 @@ fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretIn
         }
     };
     // println!(" <- read ID ", P);
-    // secret comparisons are performed on 64 bit integers
-    let id_s_i64 = SecretInteger::<64>::from(id_s_modp);
+    // secret comparisons are performed on 32 bit integers
+    let id_s_i32 = SecretInteger::<32>::from(id_s_modp);
     // println!("- converted ID ", P);
-    Some((id_s_modp, id_s_i64))
+    Some((id_s_modp, id_s_i32))
 }
