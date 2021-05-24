@@ -75,7 +75,7 @@ fn main() {
 }
 
 #[inline(always)]
-fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretInteger<32>)> {
+fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretInteger<64>)> {
     let mut row_participant = InputRow::read(player);
     let id_s_modp = match row_participant.next_col() {
         Some(Column::SecretModp(id)) => id,
@@ -89,8 +89,8 @@ fn read_next_id<const P: u32>(player: Player<P>) -> Option<(SecretModp, SecretIn
         }
     };
     // println!(" <- read ID ", P);
-    // secret comparisons are performed on 32 bit integers
-    let id_s_i32 = SecretInteger::<32>::from(id_s_modp);
+    // secret comparisons are performed on 64 bit integers
+    let id_s_i64 = SecretInteger::<64>::from(id_s_modp);
     // println!("- converted ID ", P);
-    Some((id_s_modp, id_s_i32))
+    Some((id_s_modp, id_s_i64))
 }
