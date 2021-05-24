@@ -33,7 +33,7 @@ fn main() {
 
         loop {
             if i64::from(id_s_64_0.eq(id_s_64_1).reveal()) == 1 {
-                println!(" -> match");
+                // println!(" -> match");
                 // Create the next row we are going to output to the data consumer
                 let mut output_row_0 = OutputRow::new(PARTICIPANT_0);
                 // Create the next row we are going to output to the data consumer
@@ -47,7 +47,7 @@ fn main() {
                 // this break returns to the global loop and fetches bth IDs
                 break;
             } else if i64::from(id_s_64_0.lt(id_s_64_1).reveal()) == 1 {
-                println!(" -> ID 0 < ID 1");
+                // println!(" -> ID 0 < ID 1");
                 // Fetch next id_participant 0
                 match read_next_id(PARTICIPANT_0) {
                     Some((id_s_modp, id_s_64)) => {
@@ -59,6 +59,7 @@ fn main() {
                     }
                 };
             } else {
+                // println!(" -> ID 0 > ID 1");
                 match read_next_id(PARTICIPANT_1) {
                     Some((id_s_modp, id_s_64)) => {
                         id_s_modp_1 = id_s_modp;
