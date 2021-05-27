@@ -13,11 +13,10 @@ const PARTICIPANT_1: Player<1> = Player::<1>; // data provider, receives results
 #[inline(never)]
 #[scale::main(KAPPA = 40)]
 fn main() {
-    println!("##### Reading from participants");
-
     let mut pr0 = PlayerReader::new(PARTICIPANT_0);
     let mut pr1 = PlayerReader::new(PARTICIPANT_1);
 
+    println!("##### Reading from participants");
     'global: loop {
         // First fetch id of participant 0
         let (mut id_s_modp_0, mut id_s_64_0) = match pr0.read_next_value() {
@@ -31,7 +30,7 @@ fn main() {
         };
 
         // First fetch id of participant 1
-        let (mut id_s_modp_1, mut id_s_64_1) = match pr0.read_next_value() {
+        let (mut id_s_modp_1, mut id_s_64_1) = match pr1.read_next_value() {
             Some(id_s_modp) => {
                 let id_s_64 = SecretInteger::<64>::from(id_s_modp);
                 (id_s_modp, id_s_64)
