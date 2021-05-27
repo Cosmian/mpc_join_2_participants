@@ -100,8 +100,8 @@ impl<const P: u32> PlayerReader<P> {
             nb_cols: 0,
             current_col: 0,
             eof: false,
-            values: Slice::uninitialized(0),
-            current_index: 0,
+            values: Slice::uninitialized(1),
+            current_index: 1,
         }
     }
 
