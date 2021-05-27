@@ -41,6 +41,7 @@ fn main() {
         };
 
         loop {
+            println!("v0: ", id_s_64_0.reveal(), ", v1: ", id_s_64_1.reveal());
             if i64::from(id_s_64_0.eq(id_s_64_1).reveal()) == 1 {
                 println!(" -> match");
                 // Create the next row we are going to output to the data consumer
