@@ -2,7 +2,7 @@
 #![cfg_attr(not(test), no_main)]
 
 use cosmian_std::prelude::scale_std::slice::Slice;
-use cosmian_std::scale::{self, println, Channel, ClearModp, SecretModp};
+use cosmian_std::scale::{self, println, Channel, ClearModp, Reveal, SecretModp};
 use cosmian_std::{prelude::*, OutputRow};
 
 // Players
@@ -117,6 +117,7 @@ impl<const P: u32> PlayerReader<P> {
         }
         let value = *(self.values.get_unchecked(self.current_index));
         self.current_index += 1;
+        println!("VALUE<", P, ">:", i64::from(value.reveal()));
         Some(value)
     }
 
