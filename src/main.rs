@@ -1,10 +1,10 @@
-#![cfg_attr(not(test), no_std)]
-#![cfg_attr(not(test), no_main)]
+// #![cfg_attr(not(test), no_std)]
+// #![cfg_attr(not(test), no_main)]
 
-// #![no_std]
-// #![no_main]
-// #![feature(const_evaluatable_checked, const_generics)]
-// #![allow(non_snake_case, incomplete_features)]
+#![no_std]
+#![no_main]
+#![feature(const_evaluatable_checked, const_generics)]
+#![allow(non_snake_case, incomplete_features)]
 
 use cosmian_std::prelude::scale_std::slice::Slice;
 use cosmian_std::scale::{self, println, Channel, ClearModp, Reveal, SecretModp};
