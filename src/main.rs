@@ -101,7 +101,7 @@ impl<const P: u32> PlayerReader<P> {
             current_col: 0,
             eof: false,
             values: Slice::uninitialized(1),
-            current_index: 1,
+            current_index: 1, //workaround: slice cannot be initialized at 0
         }
     }
 
@@ -139,11 +139,12 @@ impl<const P: u32> PlayerReader<P> {
         self.values = Slice::private_input(num_values, self.player, Channel::<2>);
         println!(self.values.len(), ")");
 
+        self.current_col += 1;
         true
     }
 
     pub fn read_next_record(&mut self) -> bool {
-        println!("...read next record");
+        println!("...read next record ", P);
         let nb_cols: ClearModp = SecretModp::private_input(self.player, Channel::<0>).reveal();
         self.nb_cols = i64::from(nb_cols) as u64;
         if self.nb_cols == 0 {
