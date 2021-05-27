@@ -6,15 +6,17 @@
 #![feature(const_evaluatable_checked, const_generics)]
 #![allow(non_snake_case, incomplete_features)]
 
-use cosmian_std::prelude::scale_std::slice::Slice;
-use cosmian_std::scale::{self, println, Channel, ClearModp, Reveal, SecretModp};
-use cosmian_std::{prelude::*, OutputRow};
+// use cosmian_std::prelude::scale_std::slice::Slice;
+// use cosmian_std::scale::{self, println, Channel, ClearModp, Reveal, SecretModp};
+// use cosmian_std::{prelude::*, OutputRow};
 
-// use scale_std::bit_protocols::KOpL;
-// use scale_std::fixed_point::*;
-// use scale_std::integer::*;
-// use scale_std::math::*;
-// use scale_std::slice::Slice;
+use cosmian_std::prelude::scale_std;
+use cosmian_std::prelude::scale_std::bit_protocols::KOpL;
+use cosmian_std::prelude::scale_std::fixed_point::*;
+use cosmian_std::prelude::scale_std::integer::*;
+use cosmian_std::prelude::scale_std::math::*;
+use cosmian_std::scale;
+
 #[scale::main(KAPPA = 40)]
 #[inline(always)]
 fn main() {
