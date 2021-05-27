@@ -111,11 +111,10 @@ impl<const P: u32> PlayerReader<P> {
             return None;
         }
         if self.current_index >= self.values.len() {
-            if self.read_next_column() {
-                self.current_index = 0;
-            } else {
+            if !self.read_next_column() {
                 return None;
             }
+            self.current_index = 0;
         }
         let value = *(self.values.get_unchecked(self.current_index));
         self.current_index += 1;
@@ -132,17 +131,20 @@ impl<const P: u32> PlayerReader<P> {
 
         let num_values = SecretModp::private_input(self.player, Channel::<1>).reveal();
         let num_values = i64::from(num_values) as u64;
+        print!("......read next column...len: ", num_values, "(");
         if num_values == 0 {
             self.eof = true;
             return false;
         }
 
         self.values = Slice::private_input(num_values, self.player, Channel::<2>);
+        println!(self.values.len(), ")");
 
         true
     }
 
     pub fn read_next_record(&mut self) -> bool {
+        println!("...read next record");
         let nb_cols: ClearModp = SecretModp::private_input(self.player, Channel::<0>).reveal();
         self.nb_cols = i64::from(nb_cols) as u64;
         if self.nb_cols == 0 {
